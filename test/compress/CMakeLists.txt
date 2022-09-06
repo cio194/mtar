@@ -1,0 +1,3 @@
+add_executable(compress_test compress_test.cpp)
+set_property(TARGET compress_test PROPERTY RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(compress_test PUBLIC libcompress)

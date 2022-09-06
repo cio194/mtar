@@ -1,0 +1,210 @@
+#pragma once
+
+#include "huffman_tree.h"
+
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+
+#include <cstdio>
+#include <unordered_map>
+#include <vector>
+#include <queue>
+#include <string>
+#include <cstdlib>
+#include <cstring>
+#include <memory>
+#include <libgen.h>
+
+#define COMPRESS_MAGIC "Ll6)v-LurUR%Prt="
+#define READ_BUFF_SIZE 4096
+#define WRITE_BUFF_SIZE 4096
+#define COMPRESS_SUFFIX "cmps"
+
+using CharCountType = size_t;
+
+template <typename CharType, typename FreqType>
+class Compresser {
+public:  // test
+  std::string src_dir_real;
+  std::string src_basename;
+  std::string dst_dir_real;
+  std::string dst_basename;
+public:
+  int Compress(const std::string& src_path, const std::string& dst_dir = "");
+private:
+  int CheckParams(const std::string& src_path, const std::string& dst_dir);
+  int CountFreq(FILE* file, std::unordered_map<CharType, FreqType>& freq_table);
+  int WriteMagic(FILE* file);
+  int WriteFreq(FILE* file, const HuffmanTree<CharType, FreqType>& tree);
+  int WriteData(FILE* file, const HuffmanTree<CharType, FreqType>& tree);
+};
+
+template <typename CharType, typename FreqType>
+int Compresser<CharType, FreqType>::Compress(const string& src_path, const string& dst_dir) {
+//  if (CheckParams(src_path, dst_dir, src_dir_real, src_basename, dst_dir_real, dst_basename) < 0) return -1;
+//  // 为了支持符号链接，不能直接使用fopen
+//  int fd = open(src_path.c_str(), O_RDONLY | O_NOFOLLOW);
+//  if (fd < 0) {
+//    perror("CountFreq open srcfile");
+//    return -1;
+//  }
+//  FILE* file = fdopen(fd, "r");
+//  if (nullptr == file) {
+//    perror("CountFreq fdopen");
+//    return -1;
+//  }
+//
+//  // 词频统计，构造Huffman树
+//  unordered_map<char, ssize_t> freq_table;
+//  if (CountFreq(src_path, freq_table) < 0) return -1;
+//  HuffmanTree<char, ssize_t> tree(freq_table);
+//  // 写入文件
+//  string dst_path = dst_dir_real + "/" + dst_basename;
+//  auto file = fopen(dst_path.c_str(), "w");
+//  if (nullptr == file) {
+//    perror("fopen in Compress");
+//    return -1;
+//  }
+//  // 写入压缩文件魔数
+//  if (WriteMagic(file) < 0) return -1;
+//  // 写入字符-词频表
+//  if (WriteFreq(file, tree) < 0) return -1;
+//  // 写入压缩数据
+//  if (WriteData(file, tree) < 0) return -1;
+//
+//  if (EOF == fclose(file)) {
+//    perror("fclose in Compress");
+//    return -1;
+//  }
+//  return 0;
+}
+
+template <typename CharType, typename FreqType>
+int Compresser<CharType, FreqType>::CheckParams(const std::string& src_path, const std::string& dst_dir) {
+  struct stat statbuf;
+  if (lstat(src_path.c_str(), &statbuf) < 0) {
+    perror("CheckParams lstat");
+    return -1;
+  }
+  // 仅支持普通文件、链接文件
+  // 先获取src_dir_real，src_basename
+  if (S_ISREG(statbuf.st_mode) || S_ISLNK(statbuf.st_mode)) {
+    auto src_cp = strdup(src_path.c_str());
+    if (nullptr == src_cp) {
+      perror("CheckParams strdup");
+      return -1;
+    }
+    auto rdir = realpath(dirname(src_cp), nullptr);
+    if (nullptr == rdir) {
+      perror("CheckParams realpath");
+      return -1;
+    }
+    src_dir_real = string(rdir);
+    free(rdir);
+    free(src_cp);
+
+    src_cp = strdup(src_path.c_str());
+    if (nullptr == src_cp) {
+      perror("CheckParams strdup");
+      return -1;
+    }
+    src_basename = string(basename(src_cp));
+    free(src_cp);
+  } else {
+    printf("CheckParams 需压缩文件的类型错误\n");
+    return -1;
+  }
+
+  // 获取dst_dir_real，dst_basename
+  if (dst_dir.empty()) {
+    dst_dir_real = src_dir_real;
+  } else {
+    if (lstat(dst_dir.c_str(), &statbuf) < 0) {
+      perror("CheckParams lstat");
+      return -1;
+    }
+    if (!S_ISDIR(statbuf.st_mode)) {
+      printf("CheckParams 目标路径并非目录\n");
+      return -1;
+    }
+    auto rdir = realpath(dst_dir.c_str(), nullptr);
+    if (nullptr == rdir) {
+      perror("CheckParams realpath");
+      return -1;
+    }
+    dst_dir_real = string(rdir);
+    free(rdir);
+  }
+  dst_basename = src_basename + "." + COMPRESS_SUFFIX;
+  string dst_path = dst_dir_real + "/" + dst_basename;
+  if (access(dst_path.c_str(), F_OK) != -1) {
+    printf("CheckParams 目标路径已存在压缩文件\n");
+    return -1;
+  }
+  return 0;
+}
+
+template <typename CharType, typename FreqType>
+int Compresser<CharType, FreqType>::CountFreq(FILE* file, std::unordered_map<CharType, FreqType>& freq_table) {
+  CharType c;
+  // fread测试过，末尾不足直接EOF
+  while (fread(&c, sizeof(c), 1, file) == 1) {
+    if (freq_table.count(c)) {
+      ++freq_table[c];
+    } else {
+      freq_table[c] = 1;
+    }
+  }
+  if (ferror(file)) {
+    perror("CountFreq fgetc");
+    return -1;
+  }
+  return 0;
+}
+
+template <typename CharType, typename FreqType>
+int Compresser<CharType, FreqType>::WriteMagic(FILE* file) {
+  if (EOF == fputs(COMPRESS_MAGIC, file)) {
+    perror("WriteMagic fputs");
+    return -1;
+  }
+  return 0;
+}
+
+template <typename CharType, typename FreqType>
+int Compresser<CharType, FreqType>::WriteFreq(FILE* file, const HuffmanTree<CharType, FreqType>& tree) {
+  const auto& freq_vec = tree.freq_vec;
+  CharCountType n = freq_vec.size();
+  if (fwrite(&n, sizeof(n), 1, file) != 1) {
+    perror("WriteFreq fwrite");
+    return -1;
+  }
+  for (CharCountType i = 0; i < n; ++i) {
+    auto ch = freq_vec[i]->ch;
+    auto freq = freq_vec[i]->freq;
+    // 利用标准库的缓冲，避免直接write系统调用或者自己做缓冲
+    if (fwrite(&ch, sizeof(ch), 1, file) != 1) {
+      perror("fwrite int WriteFreq");
+      return -1;
+    }
+    if (fwrite(&freq, sizeof(freq), 1, file) != 1) {
+      perror("fwrite int WriteFreq");
+      return -1;
+    }
+  }
+  return 0;
+}
+
+template<typename CharType, typename FreqType>
+int Compresser<CharType, FreqType>::WriteData(FILE *file, const HuffmanTree<CharType, FreqType> &tree) {
+  return 0;
+}
+
+
+
+
+
+
+
+
