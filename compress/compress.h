@@ -1,19 +1,13 @@
 #pragma once
 
 #include "huffman_tree.h"
+#include "compress_utils.h"
 #include <string>
 #include <cstdlib>
 #include <unordered_map>
-#include <cstdint>
-#include <utility>
 #include <vector>
 #include <cstdio>
-
-#include <sys/stat.h>
 #include <libgen.h>
-
-#define COMPRESS_MAGIC "Ll6)v-LurUR%Prt="
-#define COMPRESS_SUFFIX "mzip"
 
 class Compressor {
 public:
@@ -23,26 +17,13 @@ public:
 
 public: // test
 //private:
-  int GetFreq(std::vector<Freq> &freq_vec, FILE *src);
-  int Write(FILE *src, FILE *dst, const std::vector<Freq> &freq_vec,
-            const std::unordered_map<char, std::string> &coding_map,
-            const std::string &src_str);
+  int GetFreq(FILE *src, std::vector<Freq> &freq_vec);
   int WriteMeta(FILE *dst, const std::string &src_str);
   int WriteFreq(FILE *dst, const std::vector<Freq> &freq_vec);
   int WriteData(FILE *src, FILE *dst,
                 const std::unordered_map<char, std::string> &coding_map);
 
 private:
-  struct MStat {
-    mode_t st_mode_;
-    uid_t st_uid_;
-    gid_t st_gid_;
-    time_t st_atime_;
-    time_t st_mtime_;
-    time_t st_ctime_;
-    uint16_t name_size_;
-  };
-
   struct BBuf {
     int buf_ = 0;
     int cur_ = 0;

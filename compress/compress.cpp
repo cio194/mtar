@@ -1,5 +1,4 @@
 #include "compress.h"
-#include "huffman_tree.h"
 
 int Compressor::Compress(const std::string &src, const std::string &dst) {
   // 打开文件
@@ -14,18 +13,40 @@ int Compressor::Compress(const std::string &src, const std::string &dst) {
     return -1;
   }
 
-  // 词频统计
+  // 写入魔数
+  if (fputs(COMPRESS_MAGIC, dst_file) == EOF) {
+    perror("fputs magic");
+    return -1;
+  }
+
+  // 写入文件元信息
+  if (WriteMeta(dst_file, src) < 0) {
+    printf("error WriteMeta\n");
+    return -1;
+  }
+
+  // 词频统计，并写入词频表
   std::vector<Freq> freq_vec;
-  if (GetFreq(freq_vec, src_file) < 0) return -1;
+  if (GetFreq(src_file, freq_vec) < 0) {
+    printf("error GetFreq\n");
+    return -1;
+  }
+  if (WriteFreq(dst_file, freq_vec) < 0) {
+    printf("error WriteFreq\n");
+    return -1;
+  }
   // TODO 针对空文件、单字符文件，做特殊处理
 
-  // 构造Huffman树
+  // 用词频表构造Huffman树，生成编码
   std::unordered_map<char, std::string> coding_map;
-  HuffmanTree tree;
-  tree.Encode(freq_vec, coding_map);
+  HuffmanTree tree(freq_vec);
+  tree.Encode(coding_map);
 
-  // 写入目标文件
-  if (Write(src_file, dst_file, freq_vec, coding_map, src) < 0) return -1;
+  // 依靠编码，写入压缩数据
+  if (WriteData(src_file, dst_file, coding_map) < 0) {
+    printf("error WriteData\n");
+    return -1;
+  }
 
   // 关闭文件
   fclose(src_file);
@@ -33,7 +54,7 @@ int Compressor::Compress(const std::string &src, const std::string &dst) {
   return 0;
 }
 
-int Compressor::GetFreq(std::vector<Freq> &freq_vec, FILE *src) {
+int Compressor::GetFreq(FILE *src, std::vector<Freq> &freq_vec) {
   int c;
   std::unordered_map<char, uint64_t> freq_map;
   while ((c = fgetc(src)) != EOF) {
@@ -48,20 +69,6 @@ int Compressor::GetFreq(std::vector<Freq> &freq_vec, FILE *src) {
     return -1;
   }
   for (const auto &p : freq_map) freq_vec.push_back({p.first, p.second});
-  return 0;
-}
-
-int Compressor::Write(FILE *src, FILE *dst, const std::vector<Freq> &freq_vec,
-                      const std::unordered_map<char, std::string> &coding_map,
-                      const std::string &src_str) {
-  // 魔数 - 元信息 - 词频表 - 压缩数据
-  if (fputs(COMPRESS_MAGIC, dst) == EOF) {
-    perror("fputs dst");
-    return -1;
-  }
-  if (WriteMeta(dst, src_str) < 0) return -1;
-  if (WriteFreq(dst, freq_vec) < 0) return -1;
-  if (WriteData(src, dst, coding_map) < 0) return -1;
   return 0;
 }
 
@@ -123,8 +130,8 @@ int Compressor::WriteMeta(FILE *dst, const std::string &src_str) {
 
 int Compressor::WriteFreq(FILE *dst, const std::vector<Freq> &freq_vec) {
   int n = freq_vec.size();
-  if (fputc(n, dst) == EOF) {
-    perror("fputc dst");
+  if (fwrite(&n, sizeof(n), 1, dst) != 1) {
+    perror("fwrite dst");
     return -1;
   }
   for (int i = 0; i < n; ++i) {

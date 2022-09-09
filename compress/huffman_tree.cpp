@@ -3,13 +3,9 @@
 #include <queue>
 #include <algorithm>
 
-HuffmanTree::HuffmanTree() : root_(nullptr) {}
-
-void HuffmanTree::Encode(const std::vector<Freq> &freq_vec,
-                        std::unordered_map<char, std::string> &coding_map) {
-  std::vector<HuffmanNode*> freq_nodes;
+HuffmanTree::HuffmanTree(const std::vector<Freq> &freq_vec) : root_(nullptr) {
   for (const auto &freq : freq_vec)
-    freq_nodes.push_back(new HuffmanNode(freq.ch_, freq.freq_));
+    leaves_.push_back(new HuffmanNode(freq.ch_, freq.freq_));
 
   // 小顶堆比较函数
   static auto comp = [](HuffmanNode *x, HuffmanNode *y) {
@@ -17,7 +13,7 @@ void HuffmanTree::Encode(const std::vector<Freq> &freq_vec,
   };
   std::priority_queue<
           HuffmanNode *, std::vector<HuffmanNode *>, decltype(comp)
-  > pq(freq_nodes.begin(), freq_nodes.end(), comp);
+  > pq(leaves_.begin(), leaves_.end(), comp);
   for (int i = 1; i < freq_vec.size(); ++i) {
     auto x = new HuffmanNode();
     auto y = pq.top();
@@ -32,9 +28,11 @@ void HuffmanTree::Encode(const std::vector<Freq> &freq_vec,
     pq.push(x);
   }
   root_ = pq.top();
+}
 
+void HuffmanTree::Encode(std::unordered_map<char, std::string> &coding_map) {
   std::string coding;
-  for (auto node : freq_nodes) {
+  for (auto node : leaves_) {
     auto ch = node->ch_;
     while (node->p_ != nullptr) {
       coding.push_back(node == node->p_->left_ ? '0' : '1');

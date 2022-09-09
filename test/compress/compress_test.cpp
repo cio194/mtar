@@ -1,6 +1,6 @@
-#include "huffman_tree.h"
 #include "treeprinter.h"
 #include "compress.h"
+#include "decompress.h"
 
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -18,7 +18,7 @@ using namespace std;
 int testHuffmanTree() {
   string src = "static/test_huffman_tree.txt";
   FILE *src_file = fopen(src.c_str(), "r");
-  if (nullptr == src_file) {
+  if (src_file == nullptr) {
     perror("fopen src");
     return -1;
   }
@@ -26,14 +26,14 @@ int testHuffmanTree() {
   Compressor compressor;
 
   std::vector<Freq> freq_vec;
-  if (compressor.GetFreq(freq_vec, src_file) < 0) {
+  if (compressor.GetFreq(src_file, freq_vec) < 0) {
     cout << "get freq failed" << endl;
     return -1;
   }
 
   std::unordered_map<char, std::string> coding_map;
-  HuffmanTree tree;
-  tree.Encode(freq_vec, coding_map);
+  HuffmanTree tree(freq_vec);
+  tree.Encode(coding_map);
 
   using TestNode = HuffmanTree::HuffmanNode;
   tp::TreePrinter<TestNode, tp::HuffmanTreeNodeAdapter<TestNode>>
@@ -45,14 +45,22 @@ int testHuffmanTree() {
 }
 
 void testCompress() {
-//  string src = "static/[代码大全2中文版.pdf";
-  string src = "static/test_compress.txt";
+  string src = "static/[代码大全2中文版.pdf";
+//  string src = "static/test_compress.txt";
   string dst = "static/test_compress.mzip";
   Compressor compressor;
   compressor.Compress(src, dst);
 }
 
+void testDecompress() {
+  string src = "static/test_compress.mzip";
+  string dst = "static/decompressed";
+  Decompressor decompressor;
+  decompressor.Decompress(src, dst);
+}
+
 int main() {
 //  testHuffmanTree();
   testCompress();
+  testDecompress();
 }
