@@ -2,6 +2,7 @@
 
 #include <cstdio>
 #include <cstdint>
+#include <string>
 #include <sys/stat.h>
 
 #define COMPRESS_MAGIC "Ll6)v-LurUR%Prt="
@@ -13,6 +14,10 @@ struct CStat {
   gid_t st_gid_;
   time_t st_atime_;
   time_t st_mtime_;
-  time_t st_ctime_;
   uint16_t name_len_;
+  std::string name_;
+
+  void Set(const struct stat& sb, const std::string& name);
+  int Write(FILE *dst);
+  int Read(FILE *src);
 };

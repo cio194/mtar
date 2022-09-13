@@ -4,16 +4,21 @@
 #include "huffman_tree.h"
 #include <string>
 #include <vector>
+#include <cstdio>
+#include <unistd.h>
+#include <utime.h>
 
 class Decompressor {
 public:
-  Decompressor() = default;
-  ~Decompressor() = default;
   int Decompress(const std::string &src, const std::string &dst_dir);
 
 private:
-  int CheckMagic(FILE* src);
-  FILE *SetDstFileAttribution(FILE* src, const std::string &dst_dir);
-  int ReadFreq(FILE* src, std::vector<Freq> &freq_vec);
-  int DecompressData(FILE* src, FILE *dst, const HuffmanTree& tree);
+  int CheckMagic();
+  int GetDstFile(const std::string &dst_dir, CStat &cstat);
+  int ReadFreq(std::vector<Freq> &freq_vec);
+  int DecompressData(const HuffmanTree& tree);
+
+private:
+  FILE* src_;
+  FILE* dst_;
 };

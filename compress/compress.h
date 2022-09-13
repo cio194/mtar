@@ -11,18 +11,16 @@
 
 class Compressor {
 public:
-  Compressor() = default;
-  ~Compressor() = default;
   int Compress(const std::string &src, const std::string &dst);
 
-public: // test
-//private:
-  int GetFreq(FILE *src, std::vector<Freq> &freq_vec);
-  int WriteMeta(FILE *dst, const std::string &src_str);
-  int WriteFreq(FILE *dst, const std::vector<Freq> &freq_vec);
-  int WriteData(FILE *src, FILE *dst,
-                const std::unordered_map<char, std::string> &coding_map);
-
+private:
+  int WriteMeta(const std::string &src_str);
+  int GetFreq(std::vector<Freq> &freq_vec);
+  int WriteFreq(const std::vector<Freq> &freq_vec);
+  int WriteData(const std::unordered_map<char, std::string> &coding_map);
+private:
+  FILE *src_;
+  FILE *dst_;
 private:
   struct BBuf {
     int buf_ = 0;
