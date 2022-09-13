@@ -11,8 +11,6 @@
 #include <iostream>
 #include <string>
 
-#define READ_BUFF_SIZE 4096
-
 using namespace std;
 
 int testHuffmanTree() {

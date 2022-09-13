@@ -4,4 +4,5 @@ project(mtar)
 set(CMAKE_CXX_STANDARD 11)
 
 add_subdirectory(compress)
+add_subdirectory(pack)
 add_subdirectory(test)

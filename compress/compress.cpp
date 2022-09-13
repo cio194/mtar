@@ -78,7 +78,7 @@ static std::string GetBasename(const std::string &s) {
 }
 
 int Compressor::WriteMeta(FILE *dst, const std::string &src_str) {
-  MStat mstat;
+  CStat mstat;
   struct stat sb;
   if (lstat(src_str.c_str(), &sb) != 0) {
     perror("lstat src");
@@ -91,7 +91,7 @@ int Compressor::WriteMeta(FILE *dst, const std::string &src_str) {
   mstat.st_mtime_ = sb.st_mtim.tv_sec;
   mstat.st_ctime_ = sb.st_ctim.tv_sec;
   std::string mbasename = GetBasename(src_str);
-  mstat.name_size_ = mbasename.size();
+  mstat.name_len_ = mbasename.size();
   // 结构体写入可移植性太差
   if (fwrite(&mstat.st_mode_, sizeof(mstat.st_mode_), 1, dst) != 1) {
     perror("fwrite dst");
@@ -117,7 +117,7 @@ int Compressor::WriteMeta(FILE *dst, const std::string &src_str) {
     perror("fwrite dst");
     return -1;
   }
-  if (fwrite(&mstat.name_size_, sizeof(mstat.name_size_), 1, dst) != 1) {
+  if (fwrite(&mstat.name_len_, sizeof(mstat.name_len_), 1, dst) != 1) {
     perror("fwrite dst");
     return -1;
   }

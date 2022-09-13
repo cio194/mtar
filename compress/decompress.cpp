@@ -114,7 +114,7 @@ Decompressor::DecompressData(FILE *src, FILE *dst, const HuffmanTree &tree) {
 
 FILE *
 Decompressor::SetDstFileAttribution(FILE *src, const std::string &dst_dir) {
-  MStat mstat;
+  CStat mstat;
   if (fread(&mstat.st_mode_, sizeof(mstat.st_mode_), 1, src) != 1) {
     perror("fread");
     return nullptr;
@@ -139,11 +139,11 @@ Decompressor::SetDstFileAttribution(FILE *src, const std::string &dst_dir) {
     perror("fread");
     return nullptr;
   }
-  if (fread(&mstat.name_size_, sizeof(mstat.name_size_), 1, src) != 1) {
+  if (fread(&mstat.name_len_, sizeof(mstat.name_len_), 1, src) != 1) {
     perror("fread");
     return nullptr;
   }
-  int len = mstat.name_size_;
+  int len = mstat.name_len_;
   std::string name(len, ' ');
   if (fread(const_cast<char *>(name.c_str()), 1, len, src) != len) {
     perror("fread");
