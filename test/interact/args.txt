@@ -1,0 +1,7 @@
+-ptc
+./static/
+./static/a
+./static/lalala
+
+./static/c.mtar
+static/umpacked/

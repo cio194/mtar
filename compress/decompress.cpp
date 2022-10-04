@@ -1,7 +1,8 @@
 #include "decompress.h"
 
 int
-Decompressor::Decompress(const std::string &src, const std::string &dst_dir) {
+Decompressor::Decompress(const std::string &src, const std::string &dst_dir,
+                         std::string &decompressed) {
   // 打开文件
   src_ = fopen(src.c_str(), "r");
   if (src_ == nullptr) {
@@ -17,7 +18,7 @@ Decompressor::Decompress(const std::string &src, const std::string &dst_dir) {
 
   // 读取源文件的元信息，创建目标文件
   CStat cstat;
-  if (GetDstFile(dst_dir, cstat) < 0) {
+  if (GetDstFile(dst_dir, cstat, decompressed) < 0) {
     printf("error GetDstFile\n");
     return -1;
   }
@@ -29,7 +30,6 @@ Decompressor::Decompress(const std::string &src, const std::string &dst_dir) {
     return -1;
   }
   HuffmanTree tree(freq_vec);
-  // TODO 针对空文件、单字符文件，做特殊处理
 
   // 通过Huffman树，进行解压缩
   if (DecompressData(tree) < 0) {
@@ -38,12 +38,11 @@ Decompressor::Decompress(const std::string &src, const std::string &dst_dir) {
   }
 
   // 设置目标文件元信息，并关闭文件
-  std::string dst_str = dst_dir + cstat.name_;
-  lchown(dst_str.c_str(), cstat.st_uid_, cstat.st_gid_);
+  lchown(decompressed.c_str(), cstat.st_uid_, cstat.st_gid_);
   struct utimbuf utb;
   utb.actime = cstat.st_atime_;
   utb.modtime = cstat.st_mtime_;
-  utime(dst_str.c_str(), &utb);
+  utime(decompressed.c_str(), &utb);
   fclose(src_);
   fclose(dst_);
   return 0;
@@ -117,11 +116,13 @@ Decompressor::DecompressData(const HuffmanTree &tree) {
   return 0;
 }
 
-int Decompressor::GetDstFile(const std::string &dst_dir, CStat &cstat) {
+int Decompressor::GetDstFile(const std::string &dst_dir, CStat &cstat,
+                             std::string &decompressed) {
   if (cstat.Read(src_) < 0) return -1;
 
-  std::string dst_str = dst_dir + cstat.name_;
-  dst_ = fopen(dst_str.c_str(), "w");
+  // todo 解压文件已存在的处理
+  decompressed = dst_dir + cstat.name_;
+  dst_ = fopen(decompressed.c_str(), "w");
   if (dst_ == nullptr) {
     perror("fopen dst");
     return -1;

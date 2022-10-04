@@ -35,7 +35,6 @@ int Compressor::Compress(const std::string &src, const std::string &dst) {
     printf("error WriteFreq\n");
     return -1;
   }
-  // TODO 针对空文件、单字符文件，做特殊处理
 
   // 用词频表构造Huffman树，生成编码
   std::unordered_map<char, std::string> coding_map;

@@ -1,0 +1,3 @@
+add_executable(interact_test interact_test.cpp)
+set_property(TARGET interact_test PROPERTY RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(interact_test PUBLIC libinteract)

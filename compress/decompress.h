@@ -10,15 +10,17 @@
 
 class Decompressor {
 public:
-  int Decompress(const std::string &src, const std::string &dst_dir);
+  int Decompress(const std::string &src, const std::string &dst_dir,
+                 std::string &decompressed);
 
 private:
   int CheckMagic();
-  int GetDstFile(const std::string &dst_dir, CStat &cstat);
+  int GetDstFile(const std::string &dst_dir, CStat &cstat,
+                 std::string &decompressed);
   int ReadFreq(std::vector<Freq> &freq_vec);
-  int DecompressData(const HuffmanTree& tree);
+  int DecompressData(const HuffmanTree &tree);
 
 private:
-  FILE* src_;
-  FILE* dst_;
+  FILE *src_;
+  FILE *dst_;
 };

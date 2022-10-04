@@ -6,7 +6,7 @@
 #include <sys/stat.h>
 #include <libgen.h>
 
-#define PACK_SUFFIX "mpk"
+#define PACK_SUFFIX "mtar"
 #define PACK_MAGIC "nR8[pO9.sN4+dA1*"
 
 struct PStat {
